@@ -6,7 +6,7 @@ The project notes are in **[`AGENTS.md`](AGENTS.md)** (included above) - that is
 tools, so that not every program needs its own file. Please read it before you change anything.
 More detail, with the reasons: [`DEVELOPMENT.md`](DEVELOPMENT.md).
 
-<!-- owner-rules v12: claude (CLAUDE.md) - begin -->
+<!-- owner-rules v13: claude (CLAUDE.md) - begin -->
 
 ## Claude: models and usage
 
@@ -51,4 +51,4 @@ and when the owner says the limits or the offer have changed, follow what they s
 - Keep tool output short: filter logs and test runs to what matters rather than reading them whole.
 - Waiting for something (a build, a release): schedule a check-in instead of polling step by step.
 
-<!-- owner-rules v12: claude (CLAUDE.md) - end -->
+<!-- owner-rules v13: claude (CLAUDE.md) - end -->

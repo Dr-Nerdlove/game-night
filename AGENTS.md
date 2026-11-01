@@ -149,8 +149,7 @@ individual cases live.
   costs them more than it helps. Exception: anything that cannot be undone (swapping the key, rewriting history,
   deleting something that is not in the repo).
 - **One branch per task** (see "Changes"), named like `fix/short-topic`, instead of the session's random branch.
-  Merge into `main` once the owner agrees; that push also publishes the web version. Pull requests only if they
-  ask for one.
+  Propose it as a pull request into `main`; merging it also publishes the web version.
 - **Measure first, then claim - and say mistakes openly.** They rely on the assurance "checked"; where something
   could only be checked in the browser instead of on a real device, that belongs to it. Name explicitly what cannot
   be checked here (effect on the phone, Java compilation).
@@ -164,7 +163,7 @@ individual cases live.
 - Don't add a line that appears on every card - what everyone shares says nothing.
 - Don't hard-exclude anything the user might still want: lower it in the ranking and name the reason instead.
 
-<!-- owner-rules v12: general (AGENTS.md) - begin -->
+<!-- owner-rules v13: general (AGENTS.md) - begin -->
 
 ## General rules
 
@@ -235,8 +234,7 @@ individual cases live.
   `feature/online-update`, `fix/ota-redirect-query`, `docs/ai-rules`). Not who or when, and nothing vague like
   `test` or `update2`. Push to that branch instead of the random branch name the environment gives the
   session; this is the owner's standing permission to push to such branches. A new task in the same session
-  gets a new branch. Merge into the default branch only when the person asks for it; where others work on the
-  project, propose the merge as a pull request instead. Where the project has its own naming habits, follow
+  gets a new branch. Propose every change as a pull request into the default branch. It is merged when the person merges it on GitHub or asks for it ("übernehmen"); then merge it yourself (never squash away someone else's commits). Where the project has its own naming habits, follow
   them.
 - **After a merge or release, the new version is not everywhere at once.** GitHub keeps copies for a while
   (raw files and download links about 5 minutes, GitHub Pages about 10), and whatever a workflow builds or
@@ -324,7 +322,7 @@ missing, with a recommendation, and let the people choose.
   conversation: decisions and why, traps that cost time, how to build, test and release, and the limits of
   the environment (what a cloud session cannot do there).
 
-<!-- owner-rules v12: general (AGENTS.md) - end -->
+<!-- owner-rules v13: general (AGENTS.md) - end -->
 
 ## Project knowledge
 
@@ -332,7 +330,7 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
 
 - **People:** the owner (GitHub: Dr-Nerdlove) works on it alone, with AI assistants, and does not program. They
   decide about merging and releases; as "What has proven itself" says, tested changes may be built and
-  published without asking; each task gets its own branch, merged into `main` once they agree.
+  published without asking; each task gets its own branch and a pull request into `main`, merged once they agree.
 - **Repository language:** English since October 2026 (the owner's decision, because the repository is public):
   documentation, comments and commit messages. German identifiers in the code stay as they are. Older commit
   messages and GitHub releases from before that stay German. Commit messages and the build workflow are plain ASCII.
