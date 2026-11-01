@@ -164,7 +164,7 @@ individual cases live.
 - Don't add a line that appears on every card - what everyone shares says nothing.
 - Don't hard-exclude anything the user might still want: lower it in the ranking and name the reason instead.
 
-<!-- owner-rules v10: general (AGENTS.md) - begin -->
+<!-- owner-rules v12: general (AGENTS.md) - begin -->
 
 ## General rules
 
@@ -219,6 +219,8 @@ individual cases live.
   without asking.
 - **What users have stays usable after an update**: their settings, saved data, accounts. When a change
   would break or reset them, say so before building and offer a way to carry them over.
+- **Never overwrite `main` with a force-push and never delete it.** Not even when asked in passing; the
+  owner does that themselves if it is ever needed.
 - **Ask before anything hard to undo**: deleting data or files that are not part of the change, rewriting
   history, changing a live service, publishing to a store.
 - **New libraries or services** only with a reason, said in plain words; prefer what the project already
@@ -268,6 +270,41 @@ missing, with a recommendation, and let the people choose.
   legally reuse the code, even in a public repository; the choice of licence is the people's), and a
   `CHANGELOG.md` where releases alone do not tell the story.
 
+- **Protecting `main`**: when the rules are installed, check whether the repository is public or private.
+  - **Public**: recommend to protect `main` against force-pushes and deletion, and give the steps below. The
+    owner of the repository decides whether it makes sense for this project. You cannot set it up yourself,
+    because you have no access to the repository settings.
+  - **Private**: recommend nothing where the repository belongs to the rules' owner: they have no GitHub Pro,
+    and in a free account branch protection and rulesets exist only for public repositories (source:
+    `github/docs`, file `data/reusables/gated-features/protected-branches.md`). They can ignore GitHub's
+    notes about missing protection there. Where the repository belongs to someone else, their plan decides
+    and you cannot see it: mention once that protection on a private repository needs a paid plan (Pro or
+    Team), and leave the decision to its owner.
+  - **If you cannot tell** whether the repository is public or private (no way to look it up), ask instead of
+    guessing.
+  - **Whose repository it is matters**: only the repository's owner (or an admin) can open its settings. Where
+    it belongs to someone else, say so and tell the person to pass the steps on to them.
+
+  Steps for the owner (give them in German):
+
+  1. Auf GitHub das Repository öffnen: **Settings → Rules → Rulesets → New ruleset → New branch ruleset**.
+  2. Name: `main schützen`. **Enforcement status**: `Active`.
+  3. **Target branches → Add target → Include default branch**.
+  4. **Restrict deletions** und **Block force pushes** angehakt lassen.
+  5. **Require status checks to pass** nur anhaken, wenn das Projekt CI hat; dann die CI-Prüfung auswählen.
+     Achtung: Dann kann niemand mehr direkt auf `main` pushen, jede Änderung muss erst auf einem anderen
+     Branch die Prüfung bestehen. Das passt nur, wenn ohnehin nichts direkt auf `main` geschrieben wird
+     (auch kein Workflow). Bleibt ein Merge hängen, zuerst dort nachsehen: ob die Prüfung umbenannt wurde
+     oder bei dieser Änderung gar nicht lief.
+  6. **Nicht** "Require a pull request before merging" mit Approvals anhaken: Wer allein arbeitet, kann eigene
+     Pull Requests nicht freigeben und würde sich selbst aussperren. Auch zu zweit ist es nicht nötig und
+     bremst nur jeden Merge; der Schutz vor Force-Push und Löschen reicht.
+  7. Auf **Create** klicken.
+
+  Geklappt hat es, wenn das Ruleset in der Liste unter **Rulesets** als "Active" steht.
+  Für weitere Projekte: das Ruleset dort über **Export ruleset** speichern und im nächsten Projekt über
+  **Import a ruleset** übernehmen.
+
 ### Showing changes
 
 - Show visual changes rather than describing them: **screenshots** where the result runs on a computer.
@@ -287,7 +324,7 @@ missing, with a recommendation, and let the people choose.
   conversation: decisions and why, traps that cost time, how to build, test and release, and the limits of
   the environment (what a cloud session cannot do there).
 
-<!-- owner-rules v10: general (AGENTS.md) - end -->
+<!-- owner-rules v12: general (AGENTS.md) - end -->
 
 ## Project knowledge
 
