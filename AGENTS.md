@@ -52,7 +52,7 @@ Exception: **the build workflow and commit messages** are plain ASCII, umlauts s
 | `README.md` | user guide, in English |
 | `DEVELOPMENT.md` | reasons and history of the decisions |
 | `FONTS.md` | license notice for the embedded fonts |
-| `LICENSE` | GPL-3.0-or-later (the fonts keep the OFL 1.1) |
+| `LICENSE` | AGPL-3.0-or-later (the fonts keep the OFL 1.1) |
 
 ## Read before changing `index.html`
 
@@ -347,7 +347,7 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   padding in two places; touch targets of at least 44 px; "Played today" must not re-sort; the test traps under
   "Check, don't hope" (`getComputedStyle` after `render()`, `pkill -f`, empty shelf, Capacitor bridge,
   Wikidata 429).
-- **Repository:** public; GPL-3.0-or-later (`LICENSE`; the fonts keep the OFL 1.1). Version scheme `x.y.z` without
+- **Repository:** public; AGPL-3.0-or-later (`LICENSE`; the fonts keep the OFL 1.1). Version scheme `x.y.z` without
   two-digit parts (see "Releasing a new version"), changes in `CHANGELOG.md`. No tests; the only automatic check is a
   syntax check of the script and `sw.js` in `pages.yml`, which stops the web version from going out when it fails.
   The APK is built on demand by `apk.yml`.
