@@ -283,12 +283,13 @@ The two bundled fonts are under the SIL Open Font License 1.1; attribution is in
 
 ## Licence
 
-This project is under the **GNU General Public License, version 3 or any later
-version** — the full text is in [`LICENSE`](LICENSE).
+This project is under the **GNU Affero General Public License, version 3 or any
+later version** — the full text is in [`LICENSE`](LICENSE).
 
 In short: you may use, pass on and change the application. If you pass it on —
 changed or not — it must stay under the same licence and the source has to come
-with it. There is no warranty.
+with it - this also applies if you only offer a changed version to others over
+a network. There is no warranty.
 
 Excepted are the **two bundled fonts**: they keep their own licence, the SIL
-Open Font License 1.1 (see above). The GPL does not change that.
+Open Font License 1.1 (see above). The AGPL does not change that.

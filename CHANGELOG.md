@@ -9,6 +9,15 @@ added, with x.y.**Z** something is repaired.
 
 ## [Unreleased]
 
+### Changed
+
+- **The project moves from the GNU General Public License to the GNU Affero
+  General Public License, version 3 or any later version.** The full text is
+  in the project as `LICENSE`. For using the app nothing changes; the new
+  licence additionally requires that the source of a changed version is
+  offered to everyone who uses it over a network. The two bundled fonts keep
+  their own licence, the SIL Open Font License 1.1.
+
 ## [3.0.1] – 2026-10-30
 
 ### Changed

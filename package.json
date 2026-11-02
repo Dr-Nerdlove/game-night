@@ -2,7 +2,7 @@
   "name": "spieleabend",
   "version": "3.0.1",
   "private": true,
-  "license": "GPL-3.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "description": "Welches Brettspiel passt zur heutigen Runde? Android-App.",
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
