@@ -147,6 +147,11 @@ are simply absent. "Save as file" puts the backup in the Files app.
   days), but they never disappear entirely: a rematch should stay findable. The
   chip **Only long-unplayed** under **Additionally** shows only what has not
   been touched for over 90 days.
+- **Not in the mood**: next to it, **Not in the mood** pauses a game for three
+  months. It stays among the matches but moves to the very end of the list (from
+  the next filter change on), with "paused until …" as the reason, and the dice
+  leave it alone. After three months it comes back by itself; **End pause** on
+  the card, or on the game's row under **Edit collection**, ends it earlier.
 - The last settings are remembered in the browser.
 
 ## Keeping the collection up to date

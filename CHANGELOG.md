@@ -9,6 +9,14 @@ added, with x.y.**Z** something is repaired.
 
 ## [Unreleased]
 
+### Added
+
+- **"Not in the mood"** on every suggestion card: the game is paused for three
+  months. It stays among the matches but moves to the end of the list, says
+  "paused until ..." and is skipped by the dice. The pause ends by itself, or
+  earlier with "End pause" on the card or in the collection. The pause is part
+  of the backup; older backups load as before.
+
 ### Changed
 
 - **The project moves from the GNU General Public License to the GNU Affero
