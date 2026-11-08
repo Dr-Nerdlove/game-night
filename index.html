@@ -523,6 +523,7 @@ input:focus-visible, textarea:focus-visible{outline:2px solid var(--accent); out
   color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft); font-weight:700;
 }
 .linkbtn.played.on:hover{color:var(--accent-ink); border-color:var(--accent)}
+.linkbtn.pause.on{color:var(--ink); border-color:var(--ink); font-weight:700}
 
 .col-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column}
 .col-list li{
@@ -952,6 +953,9 @@ const TEXTE = {
     dtSpieler: "Spieler", dtDauer: "Dauer", dtAnspruch: "Anspruch",
     dtErklaeren: "Erklären", dtZuletzt: "Zuletzt",
     heuteGespielt: "Heute gespielt",
+    keineLust: "Gerade keine Lust",
+    pauseBeenden: "Pause beenden",
+    pausiertBis: d => "pausiert bis " + d,
     heuteGespieltAn: "Heute gespielt ✓",
     nochmalWuerfeln: "Nochmal würfeln",
     zuklappen: "Zuklappen",
@@ -1088,6 +1092,9 @@ const TEXTE = {
     dtSpieler: "Players", dtDauer: "Length", dtAnspruch: "Difficulty",
     dtErklaeren: "Teaching", dtZuletzt: "Last played",
     heuteGespielt: "Played today",
+    keineLust: "Not in the mood",
+    pauseBeenden: "End pause",
+    pausiertBis: d => "paused until " + d,
     heuteGespieltAn: "Played today ✓",
     nochmalWuerfeln: "Roll again",
     zuklappen: "Collapse",
@@ -1345,6 +1352,17 @@ const slugify = n => n.toLowerCase()
   .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
   .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || "spiel";
 
+// A pause runs three months; anything longer read from a backup is cut back.
+const PAUSE_MONATE = 3;
+const PAUSE_MAX = 100 * 86400000;
+const istPausiert = g => g.pausedUntil > Date.now();
+function pauseEnde(){
+  const d = new Date();
+  d.setMonth(d.getMonth() + PAUSE_MONATE);
+  return d.getTime();
+}
+const fmtPauseBis = g => new Date(g.pausedUntil).toLocaleDateString(ORTSFORM, { day:"numeric", month:"long" });
+
 const clampInt = (v, lo, hi, fallback) => {
   const n = Math.round(Number(v));
   return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback;
@@ -1372,7 +1390,10 @@ function normalize(raw, i){
     moods: moods.length ? moods : ["gruebeln"],
     note: String(raw.note == null ? "" : raw.note).trim().slice(0,300),
     lastPlayed: clampInt(raw.lastPlayed, 0, Date.now(), 0),
-    teach: raw.teach === true
+    teach: raw.teach === true,
+    // "Not in the mood": until this moment the game stands at the end of the
+    // suggestions. 0 = not paused; an expired pause counts as none.
+    pausedUntil: clampInt(raw.pausedUntil, 0, Date.now() + PAUSE_MAX, 0)
   };
 }
 
@@ -1719,6 +1740,7 @@ function evaluate(g){
 
   let score = 52;
   const reasons = [];
+  if(istPausiert(g)) reasons.push(t("pausiertBis", fmtPauseBis(g)));
 
   if(hits.length){
     score += Math.min(hits.length, 2) * 13;
@@ -1788,6 +1810,8 @@ function card(g, res, gross, kennzeichen){
     '<div class="cardfoot">' +
       '<button class="linkbtn played' + (istHeute(g.lastPlayed) ? " on" : "") + '" type="button" data-played="' +
         esc(g.id) + '">' + t(istHeute(g.lastPlayed) ? "heuteGespieltAn" : "heuteGespielt") + "</button>" +
+      '<button class="linkbtn pause' + (istPausiert(g) ? " on" : "") + '" type="button" data-pause="' +
+        esc(g.id) + '">' + t(istPausiert(g) ? "pauseBeenden" : "keineLust") + "</button>" +
       (gewuerfelt ? '<button class="linkbtn" type="button" data-reroll="1">' + t("nochmalWuerfeln") + "</button>" : "") +
       (state.expanded.has(g.id) ? '<button class="linkbtn" type="button" data-collapse="' +
         esc(g.id) + '">' + t("zuklappen") + "</button>" : "") +
@@ -1825,6 +1849,11 @@ function frischeKarte(g){
     const heute = istHeute(g.lastPlayed);
     knopf.classList.toggle("on", heute);
     knopf.textContent = t(heute ? "heuteGespieltAn" : "heuteGespielt");
+    const pause = karte.querySelector("[data-pause]");
+    if(pause){
+      pause.classList.toggle("on", istPausiert(g));
+      pause.textContent = t(istPausiert(g) ? "pauseBeenden" : "keineLust");
+    }
   }
 }
 
@@ -1869,7 +1898,8 @@ function renderResults(){
     const res = evaluate(g);
     (res.ok ? hits : outs).push({ g, res });
   });
-  hits.sort((a,b) => b.res.score - a.res.score || byName(a.g, b.g));
+  // Paused games stay among the matches, but behind all the others.
+  hits.sort((a,b) => istPausiert(a.g) - istPausiert(b.g) || b.res.score - a.res.score || byName(a.g, b.g));
 
   $("count").textContent = games.length === 0 ? t("regalLeerKurz") :
     hits.length === 0 ? t("nichtsPasstKurz") : t("spiele", hits.length);
@@ -1963,10 +1993,12 @@ function renderCollection(){
         '<span class="cmeta">' + fmtPlayers(g) + " · " + fmtDur(g) + " · " + bandOf(g).label +
           (g.teach ? " · " + t("erklaeren") : "") +
           (g.lastPlayed ? t("gespieltVor", fmtGespielt(g))
-                        : (historieVorhanden() ? " · " + t("nochNie") : "")) + "</span>" +
+                        : (historieVorhanden() ? " · " + t("nochNie") : "")) +
+          (istPausiert(g) ? " · " + t("pausiertBis", fmtPauseBis(g)) : "") + "</span>" +
       "</button>" +
       (offen ? '<span class="rowbtns">' +
         '<button class="linkbtn" type="button" data-edit="' + esc(g.id) + '">' + t("aendernKnopf") + "</button>" +
+        (istPausiert(g) ? '<button class="linkbtn" type="button" data-pause="' + esc(g.id) + '">' + t("pauseBeenden") + "</button>" : "") +
         '<button class="linkbtn danger" type="button" data-remove="' + esc(g.id) + '">' + t("entfernenKnopf") + "</button>" +
       "</span>" : "") +
       "</li>";
@@ -1982,7 +2014,8 @@ function renderCollection(){
   if(document.activeElement !== ta && !sicherungFremd){
     ta.value = JSON.stringify(games.map(g => ({
       name:g.name, min:g.min, max:g.max, best:g.best, dur:g.dur, weight:g.weight,
-      moods:g.moods, note:g.note, lastPlayed:g.lastPlayed, teach:g.teach
+      moods:g.moods, note:g.note, lastPlayed:g.lastPlayed, teach:g.teach,
+      pausedUntil: istPausiert(g) ? g.pausedUntil : undefined   // left out when not paused
     })), null, 1);
   }
 }
@@ -2093,7 +2126,8 @@ function submitGame(ev){
     name, min, max, best:[b0,b1], dur:[d0,d1],
     weight: keepsBand ? existing.weight : REP_WEIGHT[form.weight],
     moods:[...form.moods], note:val("f-note"),
-    lastPlayed: gespielt, teach: $("f-teach").checked
+    lastPlayed: gespielt, teach: $("f-teach").checked,
+    pausedUntil: existing ? existing.pausedUntil : 0       // not in the form, must survive editing
   }, games.length);
 
   if(existing) games[games.indexOf(existing)] = built;
@@ -2136,6 +2170,21 @@ document.addEventListener("click", ev => {
     frischeKarte(g);
     renderCollection();
     saveSettings();
+    return;
+  }
+
+  if(d.pause){
+    const g = games.find(x => x.id === d.pause);
+    if(!g) return;
+    g.pausedUntil = istPausiert(g) ? 0 : pauseEnde();
+    persist();
+    if(knopf.closest("#collist")) render();
+    else{
+      // Like "Played today": the card stays where it is under the finger and
+      // only changes; the game moves to the end at the next roll or filter change.
+      frischeKarte(g);
+      renderCollection();
+    }
     return;
   }
 
@@ -2371,8 +2420,10 @@ $("import").addEventListener("click", () => importGames("replace"));
 $("importadd").addEventListener("click", () => importGames("add"));
 
 function wuerfeln(){
-  const hits = games.map(g => ({ g, res:evaluate(g) })).filter(h => h.res.ok);
+  let hits = games.map(g => ({ g, res:evaluate(g) })).filter(h => h.res.ok);
   if(!hits.length) return;
+  // Paused games only come into play when nothing else fits.
+  if(hits.some(h => !istPausiert(h.g))) hits = hits.filter(h => !istPausiert(h.g));
   hits.sort((a,b) => b.res.score - a.res.score);
   const pool = hits.slice(0, Math.max(3, Math.ceil(hits.length / 2)));
   let gezogen = pool[Math.floor(Math.random() * pool.length)].g.id;

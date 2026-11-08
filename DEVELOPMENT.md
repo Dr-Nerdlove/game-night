@@ -377,6 +377,27 @@ one card is rebuilt, the order stays. The new ranking takes effect at the next
 roll or filter change. Anyone who switches back to `render()` brings the problem
 back.
 
+The same holds for **"Not in the mood"** (`data-pause`): it also only calls
+`frischeKarte(g)` on the card.
+
+## Why "Not in the mood" pauses instead of hiding
+
+The owner asked for a way to push back games that rise to the top because they
+have not been played for months (they get the "long unplayed" bonus), but which
+nobody feels like playing right now. Decided with them:
+
+- **Three months, then it ends by itself** (`pausedUntil`, a timestamp; 0 = no
+  pause). A pause that ends on its own cannot be forgotten.
+- **The game stays among the matches, sorted to the end** - not into "doesn't
+  fit tonight": it does fit, the group just does not want it. That follows the
+  rule "don't hard-exclude, lower it and name the reason". The bar still shows
+  the real match; the reason line says "paused until ...".
+- **The dice skip paused games** unless nothing else fits.
+- `pausedUntil` is carried in all four places (`normalize()`, `submitGame()`
+  keeps it from the existing game since the form has no field for it, the export
+  in `renderCollection()`; the form itself does not need it). The export leaves
+  the key out when a game is not paused, so backups stay as they were.
+
 ## Light and dark
 
 There is **only one** palette for dark, in `@media (prefers-color-scheme: dark)`.
