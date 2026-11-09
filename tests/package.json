@@ -1,0 +1,9 @@
+{
+  "name": "spieleabend-tests",
+  "private": true,
+  "type": "module",
+  "description": "Browser checks for index.html",
+  "devDependencies": {
+    "puppeteer-core": "25.16.0"
+  }
+}

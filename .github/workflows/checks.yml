@@ -1,0 +1,53 @@
+# Automatic checks on every pull request and every push to main.
+# 1. syntax: the script in index.html and sw.js must parse (same check as pages.yml)
+# 2. version: package.json, index.html and CHANGELOG.md agree, no two-digit parts
+# 3. browser: tests/smoke.mjs drives the page in headless Chrome (phone size,
+#    German and English, light and dark) and fails on any wrong behaviour or
+#    console error. Nothing here builds or publishes anything.
+name: Pruefen
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Check the syntax of the script and the service worker
+        run: |
+          sed -n '/^<script>/,/^<\/script>/p' index.html | sed '1d;$d' > app.js
+          node --check app.js
+          node --check sw.js
+
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check that the version is the same everywhere
+        run: bash tests/check-version.sh
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Run the browser tests
+        working-directory: tests
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          PUPPETEER_SKIP_DOWNLOAD: "1"
+        run: |
+          npm ci
+          node smoke.mjs
