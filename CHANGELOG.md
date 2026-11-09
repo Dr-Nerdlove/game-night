@@ -9,6 +9,8 @@ added, with x.y.**Z** something is repaired.
 
 ## [Unreleased]
 
+## [3.1.0] – 2026-11-09
+
 ### Added
 
 - **"Not in the mood"** on every suggestion card: the game is paused for three
@@ -686,7 +688,8 @@ First numbered version. It sums up what has been built up to here.
 - The app icon was cropped by Android's round mask. Foreground and background
   now exist as separate layers.
 
-[Unreleased]: https://github.com/Dr-Nerdlove/game-night/compare/v3.0.1...HEAD
+[Unreleased]: https://github.com/Dr-Nerdlove/game-night/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/Dr-Nerdlove/game-night/releases/tag/v3.1.0
 [3.0.1]: https://github.com/Dr-Nerdlove/game-night/releases/tag/v3.0.1
 [3.0.0]: https://github.com/Dr-Nerdlove/game-night/releases/tag/v3.0.0
 [2.9.2]: https://github.com/Dr-Nerdlove/game-night/releases/tag/v2.9.2
