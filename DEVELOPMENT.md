@@ -620,12 +620,28 @@ That is why the chosen day appears once more below it, written out
 weekday. Anyone who tidies up here and removes this line brings the problem
 back.
 
+## Automatic checks
+
+Until November 2026 there were no automated tests: every change was checked by
+hand with a headless browser. Then the owner asked for the safety net they have
+in their other projects - a check on every pull request, so a change that does
+not fit `main` shows up before the merge. `checks.yml` runs three jobs:
+
+- **syntax** -- the same check as in `pages.yml`;
+- **version** -- `tests/check-version.sh`: `package.json`, `data-fassung` and
+  `CHANGELOG.md` agree, and no part has two digits;
+- **browser** -- `tests/smoke.mjs` with `puppeteer-core` (pinned in
+  `tests/package.json`, kept apart from the app's own `package.json` so the APK
+  build does not install it). It serves the folder itself, blocks the service
+  worker and every outside request (Wikidata), gives each test a clean browser
+  context and fails on any console error.
+
+Each test was checked by sabotage: the behaviour broken on purpose, the test
+seen failing, the file restored. The touch-target test measures a checkbox
+through its label, as the 44-pixel rule says.
+
 ## What is left out on purpose
 
-- **No automated tests in the repository.** Checking was done each time with a
-  headless browser that operates the interface and then measures. For a file of
-  this size, a checked-in test framework is more maintenance than benefit -- as
-  it grows further, that tips.
 - **No third language.** German and English are enough; every further one
   doubles the upkeep without anyone having asked for it.
 - **No box images.** Every comparable app lives off them. Here they would need

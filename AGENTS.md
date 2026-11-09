@@ -106,7 +106,19 @@ costs a burnt version number.
 
 ## Check, don't hope
 
-There are no automated tests. What has proven itself:
+**Automatic checks** (`.github/workflows/checks.yml`, "Pruefen") run on every pull request and every push to
+`main`: the syntax check, `tests/check-version.sh` (version the same in the three places, no two-digit parts) and
+the browser tests in `tests/smoke.mjs` (headless Chrome at phone size: samples, filters, "Played today", "Not in
+the mood", backup round trip, English, touch targets, dark mode). Merge only when they are green. **A new
+behaviour gets a test there, with a sabotage check** (break it on purpose, see the test fail, restore). Run them
+locally with:
+
+```bash
+cd tests && npm ci && node smoke.mjs     # ~5 s; finds the preinstalled Chromium by itself
+bash tests/check-version.sh
+```
+
+What has proven itself beyond that:
 
 ```bash
 # Syntax of the page (and of the service worker)
@@ -338,8 +350,8 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
 - **Product languages:** German and English, following the system language. Fixed labels in `MARKUP_EN`, script
   texts in `TEXTE` (both in `index.html`); Android language lists are written by `apk.yml`. Stored data keys are
   never translated.
-- **Build and test:** no automated tests. Syntax check and local server as under "Check, don't hope";
-  interface checks with puppeteer-core against the preinstalled Chromium. Not checkable here: the Java parts
+- **Build and test:** automatic checks on every pull request (`checks.yml`: syntax, version, browser tests in
+  `tests/smoke.mjs`), see "Check, don't hope"; new behaviour gets a test there. Not checkable here: the Java parts
   (only the GitHub build shows it) and the real effect on a phone (the owner sends a phone screenshot).
 - **Release:** see "Releasing a new version": version in `package.json`, `data-fassung` and
   `CHANGELOG.md`, no two-digit parts, never lower. A push to `main` publishes the web version; the APK comes from
@@ -349,8 +361,8 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   "Check, don't hope" (`getComputedStyle` after `render()`, `pkill -f`, empty shelf, Capacitor bridge,
   Wikidata 429).
 - **Repository:** public; AGPL-3.0-or-later (`LICENSE`; the fonts keep the OFL 1.1). Version scheme `x.y.z` without
-  two-digit parts (see "Releasing a new version"), changes in `CHANGELOG.md`. No tests; the only automatic check is a
-  syntax check of the script and `sw.js` in `pages.yml`, which stops the web version from going out when it fails.
+  two-digit parts (see "Releasing a new version"), changes in `CHANGELOG.md`. Automatic checks in `checks.yml` on every
+  pull request; `pages.yml` repeats the syntax check and stops the web version from going out when it fails.
   The APK is built on demand by `apk.yml`.
 - **Limits of the environment:** a cloud session cannot push tags (HTTP 403; use the workflow instead) and cannot
   compile Java. Wikidata throttles cloud machines.

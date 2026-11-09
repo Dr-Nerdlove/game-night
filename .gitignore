@@ -10,3 +10,7 @@ package-lock.json
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Test tools (tests/package-lock.json is kept on purpose, CI uses npm ci)
+!tests/package-lock.json
+tests/node_modules/
