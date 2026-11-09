@@ -71,11 +71,24 @@ field.
 `.github/workflows/apk.yml` builds the APK on GitHub's machines, because the
 Android SDK is preinstalled there. Capacitor packages `index.html` into an app.
 
-The workflow runs **only on demand**: on a version tag (`v*`) or via "Run
-workflow". With the `veroeffentlichen` checkbox ticked it creates a release of
-its own that stays unchanged afterwards; without the tick it is a trial run
-whose APK is only attached as a build artifact (and disappears after seven
-days).
+The workflow runs in four cases:
+
+- **A push to `main` that changes `package.json`** (a merged pull request): if
+  the version there has no tag yet, it builds and releases it. If the tag exists
+  (say only a dependency changed), the small job `entscheiden` stops it before
+  anything is built. Decided in November 2026 with the owner: a release should
+  not need a manual start, but also not come with every small change - so the
+  version number in the pull request is the switch.
+- **A pull request** that touches `apk.yml`, `package.json`,
+  `capacitor.config.json` or the app icons: a trial build, nothing is published.
+  That is the check for the Java parts, which cannot be compiled anywhere else.
+  Pull requests from forks are skipped (no secrets, so no signing).
+- On a version tag (`v*`) or via "Run workflow" with the `veroeffentlichen`
+  checkbox: a release by hand.
+- "Run workflow" without the tick: a trial run.
+
+A release stays unchanged afterwards; a trial run only attaches its APK as a
+build artifact (it disappears after seven days).
 
 **What the workflow adds to the freshly generated Android project** -- `npx cap
 add android` creates `android/` anew on every build, which is why everything
@@ -87,8 +100,9 @@ customised is written as a heredoc in the workflow:
   reference in the manifest,
 - the signing and the version number.
 
-**Java cannot be compiled outside the build.** After every change to these
-building blocks, do a trial run without the tick first, and only then release.
+**Java cannot be compiled outside the build.** The pull request's trial build
+shows whether a change to these building blocks holds; merge only when it is
+green.
 
 ### The icon
 
@@ -279,7 +293,8 @@ if one differs -- this comparison is the actual safeguard:
 | `CHANGELOG.md` | section `## [1.2.3] – YYYY-MM-DD` |
 
 A push to `main` updates the **web version** by itself (see there). The **APK**
-only comes on demand, and there are two ways that end up in the same place:
+is released by itself when a push to `main` raises the version (see "Android
+app"). By hand there are two more ways that end up in the same place:
 
 **In the browser** -- "Actions" tab → "Android-App bauen" → "Run workflow", tick
 `veroeffentlichen`. The tag is created in the process.
