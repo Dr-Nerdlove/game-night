@@ -281,6 +281,13 @@ something is fixed. What happened in which version is in the
 [changelog](CHANGELOG.md); every version also has its own
 [release](../../releases) with the matching APK.
 
+## Checks
+
+Every pull request is checked automatically (*Pruefen* in the Actions tab):
+the script's syntax, the version number in its three places, and browser tests
+of the main functions on a phone-sized screen. Locally:
+`cd tests && npm ci && node smoke.mjs`.
+
 ## Fonts
 
 The two bundled fonts are under the SIL Open Font License 1.1; attribution is in
