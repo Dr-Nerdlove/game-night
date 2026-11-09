@@ -87,15 +87,18 @@ The number is in three places and must be the same everywhere, otherwise the bui
 3.0.0, not 2.10.0. Never go back to a smaller number: Android turns 1.2.3 into 10203 and refuses any update to a
 smaller value.
 
-A push to `main` updates the **web version** by itself. The **APK** is only built on demand, either with
-`git tag v1.2.3 && git push origin v1.2.3` - or, **necessarily from a session**, by starting the workflow in the
-"Actions" tab with the box `veroeffentlichen` ticked (through the GitHub tools: `run_workflow` with the input
-`veroeffentlichen`). Tags cannot be pushed from here, the server answers with HTTP 403; branch pushes work. Details
-in `DEVELOPMENT.md`.
+A push to `main` updates the **web version** by itself. The **APK is released automatically when a push to
+`main` raises the version** in `package.json` (normally: a merged pull request with the version change); if that
+version's tag exists already, nothing is built. So **a release is decided in the pull request**: raise the
+number in the three places there, or leave it alone for a change that should not become an app update yet. By
+hand it still works by starting the workflow in the "Actions" tab with the box `veroeffentlichen` ticked
+(through the GitHub tools: `run_workflow` with the input `veroeffentlichen`) or with a tag push. Tags cannot be
+pushed from here, the server answers with HTTP 403; branch pushes work. Details in `DEVELOPMENT.md`.
 
-**After a change to the native parts** (Java in `apk.yml`, manifest, language lists) do a **trial run without the
-box ticked** first: Java cannot be compiled here, only the build shows whether it holds. An error there otherwise
-costs a burnt version number.
+**Native parts get a trial build in the pull request.** A pull request that touches `apk.yml` (Java, manifest,
+language lists), `package.json`, `capacitor.config.json` or the app icons automatically runs a build without
+publishing. Java cannot be compiled here; merge only when that build is green, otherwise the automatic release
+after the merge fails and costs a version number.
 
 ## Two rules for the interface
 
@@ -343,7 +346,8 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   (only the GitHub build shows it) and the real effect on a phone (the owner sends a phone screenshot).
 - **Release:** see "Releasing a new version": version in `package.json`, `data-fassung` and
   `CHANGELOG.md`, no two-digit parts, never lower. A push to `main` publishes the web version; the APK comes from
-  the `apk.yml` workflow with `veroeffentlichen`. Never change the signing key.
+  the `apk.yml` workflow, automatically after a merge that raises the version (or by hand with
+  `veroeffentlichen`). Never change the signing key.
 - **Traps:** a new game field must be carried in four places; the embedded fonts are not clutter; `.wrap`
   padding in two places; touch targets of at least 44 px; "Played today" must not re-sort; the test traps under
   "Check, don't hope" (`getComputedStyle` after `render()`, `pkill -f`, empty shelf, Capacitor bridge,

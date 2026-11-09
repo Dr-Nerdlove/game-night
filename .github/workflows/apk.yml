@@ -1,23 +1,41 @@
 name: Android-App bauen
 
-# A release comes from a version number, never from an arbitrary state. Two
-# ways lead there:
+# A release comes from a version number, never from an arbitrary state.
+# Three ways lead there:
 #
-#   A) In the browser: "Actions" tab -> "Android-App bauen" -> "Run workflow",
+#   A) Automatically: a push to main (usually a merged pull request) that
+#      raises the version in package.json. If the tag for that version exists
+#      already, nothing is built.
+#   B) In the browser: "Actions" tab -> "Android-App bauen" -> "Run workflow",
 #      tick "veroeffentlichen". The tag is created in the process.
-#   B) On the command line: git tag v1.2.3 && git push origin v1.2.3
+#   C) On the command line: git tag v1.2.3 && git push origin v1.2.3
 #
 # Either way the build plan first checks that package.json, the footer of
 # index.html and CHANGELOG.md name the same number, then builds the APK with
 # exactly that number and creates the release v1.2.3. That stays unchanged
 # afterwards - every new version gets its own.
 #
-# "Run workflow" without the tick only builds for trying things out.
+# "Run workflow" without the tick only builds for trying things out. A pull
+# request that touches the native parts or the version also gets such a trial
+# build, so a broken build shows up before the merge and not as a burnt
+# version number.
 
 on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
+    # Path filters only apply to the branch push; tag pushes always run.
+    paths:
+      - package.json
+  pull_request:
+    paths:
+      - .github/workflows/apk.yml
+      - package.json
+      - capacitor.config.json
+      - "app-icon-*.png"
+      - icon-512.png
   workflow_dispatch:
     inputs:
       veroeffentlichen:
@@ -28,6 +46,12 @@ on:
 permissions:
   contents: write
 
+# Never two builds of the same state at once (a merge can start a release
+# while a manual run is still going).
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   # The fingerprint of the signing key. Not a secret - it is in every
   # published APK and is there precisely to be checked publicly. If a build
@@ -36,7 +60,39 @@ env:
   ERWARTETE_SIGNATUR: "82:B8:A1:99:A0:D6:A3:0B:B8:2E:9B:87:E0:A2:C8:75:31:F6:66:0F:9B:8F:67:3C:D1:4C:C9:80:ED:97:9C:A9"
 
 jobs:
+  # A push to main only leads to a release when its version is new. If the
+  # tag exists already (package.json changed for another reason), stop here.
+  entscheiden:
+    runs-on: ubuntu-latest
+    outputs:
+      bauen: ${{ steps.pruefung.outputs.bauen }}
+    steps:
+      - name: Fetch source
+        uses: actions/checkout@v7
+
+      - name: Is there something to build?
+        id: pruefung
+        run: |
+          set -eu
+          PAKET="$(node -p "require('./package.json').version")"
+          BAUEN=ja
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF_TYPE" = "branch" ]; then
+            if git ls-remote --exit-code --tags origin "refs/tags/v$PAKET" >/dev/null 2>&1; then
+              echo "Version $PAKET is released already - nothing to do."
+              BAUEN=nein
+            else
+              echo "Version $PAKET is new - it will be built and released."
+            fi
+          fi
+          echo "bauen=$BAUEN" >> "$GITHUB_OUTPUT"
+
   bauen:
+    needs: entscheiden
+    # Pull requests from forks get no secrets, so they cannot be signed.
+    if: >-
+      needs.entscheiden.outputs.bauen == 'ja' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
       - name: Fetch source
@@ -51,7 +107,10 @@ jobs:
           PAKET="$(node -p "require('./package.json').version")"
           RAUS=nein
 
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF_TYPE" = "branch" ]; then
+            # The job "entscheiden" has checked that this version is new.
+            RAUS=ja
+          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
             RAUS=ja
             if [ "${GITHUB_REF_NAME#v}" != "$PAKET" ]; then
               echo "::error::Tag $GITHUB_REF_NAME does not match package.json ($PAKET)."

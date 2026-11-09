@@ -73,10 +73,14 @@ it for a week.
 
 **Building a new version:**
 
-- **Android app:** the *Actions* tab → *Android-App bauen* → *Run workflow*,
-  with the "veroeffentlichen" (publish) box ticked. A few minutes later the new
-  release is there with its APK. Without the tick it is only a trial build.
-  Pushing a tag `v1.2.3` does the same thing. The APK never builds on its own.
+- **Android app:** raise the version (in `package.json`, `data-fassung` in
+  `index.html` and a new section in `CHANGELOG.md`) in a pull request. Once it
+  is merged into `main`, the new release with its APK appears by itself a few
+  minutes later. A pull request that touches the Android parts or the version
+  gets a trial build first, so you see before merging whether the app builds.
+  By hand: the *Actions* tab → *Android-App bauen* → *Run workflow*, with the
+  "veroeffentlichen" (publish) box ticked (without the tick it is only a trial
+  build), or by pushing a tag `v1.2.3`.
 - **Web version:** updates itself — every push to `main` that touches the web
   files publishes it again (*Web-Version veroeffentlichen*).
 
