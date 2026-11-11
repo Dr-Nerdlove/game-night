@@ -178,7 +178,7 @@ individual cases live.
 - Don't add a line that appears on every card - what everyone shares says nothing.
 - Don't hard-exclude anything the user might still want: lower it in the ranking and name the reason instead.
 
-<!-- owner-rules v14: general (AGENTS.md) - begin -->
+<!-- owner-rules v16: general (AGENTS.md) - begin -->
 
 ## General rules
 
@@ -227,8 +227,22 @@ individual cases live.
 
 ### Safety and data
 
-- **Never put secrets into the repository**: passwords, API keys, tokens, private addresses. Use the
-  project's way of keeping them out (environment, settings, `.gitignore`); if there is none, ask.
+- **Never put secrets into the repository**: passwords, API keys, tokens, private keys, keystores and `.env`
+  files with values. Use the project's way of keeping them out (environment, settings, `.gitignore`); if there
+  is none, ask.
+- **Nor what tells others about the people or their machines**: addresses and host names in the home network,
+  local paths with a user name (`C:\Users\<name>\…`, `/home/<name>/…`; use paths relative to the
+  repository), and hidden metadata in files: images, PDFs and office documents can carry the path they were
+  made from, an author's name or, in photos, the place (GPS). Remove it before committing such a file, and
+  switch it off in the tool or script that makes the file, so it does not come back.
+- **Never write a secret into a command**, not even for a quick test: tools remember commands word for word
+  (Claude Code keeps every allowed one in `.claude/settings.local.json`), and the session's output is not
+  private. Read secrets from the environment or a file that is not committed, or ask for them through the
+  session's secure input where it has one. Never print one; show at most its first characters.
+- **If a secret got out anyway** (pushed, or shown in a log, a pull request or an issue), tell the owner at
+  once, without repeating the value. The secret counts as burnt: it must be **changed at the provider**, which
+  makes the leaked copy worthless. Deleting it from the history alone is not enough (copies, caches, forks and
+  logs keep it), and rewriting history happens only when the owner explicitly agrees.
 - **Personal data** (of the people or of the product's users) is not sent anywhere new, logged or published
   without asking.
 - **What users have stays usable after an update**: their settings, saved data, accounts. When a change
@@ -276,7 +290,9 @@ missing, with a recommendation, and let the people choose.
 - **Pull request descriptions**: what changes, why, how it was tested (and what was not), and anything the
   reviewer should know.
 - **Automatic checks (CI)**: every push and pull request builds the project and runs its tests
-  automatically; merge only when they pass. Where a project has none, offer to set it up.
+  automatically; merge only when they pass. Where a project has none, offer to set it up. Where they do not
+  look for secrets yet, offer a secret scan of every push (e.g. gitleaks); add it only when the owner chooses
+  it.
 - **Releases**: version numbers `vMAJOR.MINOR.PATCH` (e.g. `v1.4.2`: major for breaking changes, minor for
   new features, patch for fixes). Files that are published are built by CI, never by hand. Each release says
   in plain words what is new and how to install or update.
@@ -338,7 +354,7 @@ missing, with a recommendation, and let the people choose.
   conversation: decisions and why, traps that cost time, how to build, test and release, and the limits of
   the environment (what a cloud session cannot do there).
 
-<!-- owner-rules v14: general (AGENTS.md) - end -->
+<!-- owner-rules v16: general (AGENTS.md) - end -->
 
 ## Project knowledge
 
@@ -364,7 +380,8 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   padding in two places; touch targets of at least 44 px; "Played today" must not re-sort; the test traps under
   "Check, don't hope" (`getComputedStyle` after `render()`, `pkill -f`, empty shelf, Capacitor bridge,
   Wikidata 429).
-- **Repository:** public; AGPL-3.0-or-later (`LICENSE`; the fonts keep the OFL 1.1). Version scheme `x.y.z` without
+- **Repository:** public; `main` is protected by the ruleset "protect main branch" (no force pushes, no deletion,
+  status checks required; Nov 2026). AGPL-3.0-or-later (`LICENSE`; the fonts keep the OFL 1.1). Version scheme `x.y.z` without
   two-digit parts (see "Releasing a new version"), changes in `CHANGELOG.md`. Automatic checks in `checks.yml` on every
   pull request; `pages.yml` repeats the syntax check and stops the web version from going out when it fails.
   The APK is built on demand by `apk.yml`.
