@@ -6,7 +6,7 @@ The project notes are in **[`AGENTS.md`](AGENTS.md)** (included above) - that is
 tools, so that not every program needs its own file. Please read it before you change anything.
 More detail, with the reasons: [`DEVELOPMENT.md`](DEVELOPMENT.md).
 
-<!-- owner-rules v14: claude (CLAUDE.md) - begin -->
+<!-- owner-rules v16: claude (CLAUDE.md) - begin -->
 
 ## Claude: models and usage
 
@@ -49,6 +49,10 @@ and when the owner says the limits or the offer have changed, follow what they s
 - **A long session costs on every step.** Once a topic is done and committed, suggest starting a new session for
   the next one; everything worth keeping is in the repository.
 - Keep tool output short: filter logs and test runs to what matters rather than reading them whole.
+- **Answer the owner short and direct** (the "caveman" principle): the result first, no filler, no
+  restating the question, no summary of what was just said. Explain in full only when the owner asks or a
+  decision needs it. Warnings, risks and questions stay in, however short the answer. Text in the
+  repository (commits, documentation, pull requests) stays fully written.
 - Waiting for something (a build, a release): schedule a check-in instead of polling step by step.
 
-<!-- owner-rules v14: claude (CLAUDE.md) - end -->
+<!-- owner-rules v16: claude (CLAUDE.md) - end -->

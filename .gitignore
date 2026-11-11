@@ -14,3 +14,6 @@ desktop.ini
 # Test tools (tests/package-lock.json is kept on purpose, CI uses npm ci)
 !tests/package-lock.json
 tests/node_modules/
+
+# Claude Code local settings (allowed commands, may hold paths or tokens)
+.claude/settings.local.json
