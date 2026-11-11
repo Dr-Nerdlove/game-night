@@ -380,7 +380,8 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   padding in two places; touch targets of at least 44 px; "Played today" must not re-sort; the test traps under
   "Check, don't hope" (`getComputedStyle` after `render()`, `pkill -f`, empty shelf, Capacitor bridge,
   Wikidata 429).
-- **Repository:** public; AGPL-3.0-or-later (`LICENSE`; the fonts keep the OFL 1.1). Version scheme `x.y.z` without
+- **Repository:** public; `main` is protected by the ruleset "protect main branch" (no force pushes, no deletion,
+  status checks required; Nov 2026). AGPL-3.0-or-later (`LICENSE`; the fonts keep the OFL 1.1). Version scheme `x.y.z` without
   two-digit parts (see "Releasing a new version"), changes in `CHANGELOG.md`. Automatic checks in `checks.yml` on every
   pull request; `pages.yml` repeats the syntax check and stops the web version from going out when it fails.
   The APK is built on demand by `apk.yml`.
