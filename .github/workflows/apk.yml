@@ -33,6 +33,7 @@ on:
     paths:
       - .github/workflows/apk.yml
       - package.json
+      - package-lock.json
       - capacitor.config.json
       - "app-icon-*.png"
       - icon-512.png
@@ -43,8 +44,10 @@ on:
         type: boolean
         default: false
 
+# Read-only by default. Only the last job (it publishes the release) gets
+# write access; the job that runs npm and Gradle never has it.
 permissions:
-  contents: write
+  contents: read
 
 # Never two builds of the same state at once (a merge can start a release
 # while a manual run is still going).
@@ -94,6 +97,17 @@ jobs:
       (github.event_name != 'pull_request' ||
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
+    # The real signing key lives in the GitHub Environment "release". Pull
+    # request runs get no environment, so they cannot read it, even if the
+    # pull request edits this very file. Everything else (push to main, tag,
+    # manual run) uses the environment. Until the environment exists and holds
+    # the two secrets, the repository secrets of the same name are used.
+    environment: ${{ github.event_name != 'pull_request' && 'release' || '' }}
+    outputs:
+      raus: ${{ steps.fassung.outputs.raus }}
+      nummer: ${{ steps.fassung.outputs.nummer }}
+      apk: ${{ steps.apk.outputs.name }}
+      abdruck: ${{ steps.apk.outputs.abdruck }}
     steps:
       - name: Fetch source
         uses: actions/checkout@v7
@@ -102,9 +116,17 @@ jobs:
         # Three places name the version. If they differ, the build aborts -
         # better here than in the user's hands.
         id: fassung
+        env:
+          VEROEFFENTLICHEN: ${{ inputs.veroeffentlichen }}
         run: |
           set -eu
           PAKET="$(node -p "require('./package.json').version")"
+          # Only a plain x.y.z with single digits may go any further; the
+          # number is used in file names, shell commands and release texts.
+          if ! printf '%s' "$PAKET" | grep -Eq '^[0-9]\.[0-9]\.[0-9]$'; then
+            echo "::error::The version in package.json is not of the form x.y.z with single digits."
+            exit 1
+          fi
           RAUS=nein
 
           if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF_TYPE" = "branch" ]; then
@@ -116,7 +138,7 @@ jobs:
               echo "::error::Tag $GITHUB_REF_NAME does not match package.json ($PAKET)."
               exit 1
             fi
-          elif [ "${{ inputs.veroeffentlichen }}" = "true" ]; then
+          elif [ "$VEROEFFENTLICHEN" = "true" ]; then
             RAUS=ja
             if git ls-remote --exit-code --tags origin "refs/tags/v$PAKET" >/dev/null 2>&1; then
               echo "::error::The tag v$PAKET already exists. Raise the version first."
@@ -147,26 +169,6 @@ jobs:
           echo "nummer=$PAKET"                        >> "$GITHUB_OUTPUT"
           echo "code=$((MA * 10000 + MI * 100 + PA))" >> "$GITHUB_OUTPUT"
           echo "Version $PAKET, Android counter $((MA * 10000 + MI * 100 + PA))"
-
-      - name: Provide signing key
-        # Without a fixed key Gradle signs every build with a new random key.
-        # For Android the signature is the app's identity: two packages with
-        # different identities are two different apps, and an update fails
-        # with "App not installed".
-        env:
-          SCHLUESSEL: ${{ secrets.SIGNIER_SCHLUESSEL }}
-          PASSWORT: ${{ secrets.SIGNIER_PASSWORT }}
-        run: |
-          set -eu
-          if [ -z "${SCHLUESSEL:-}" ] || [ -z "${PASSWORT:-}" ]; then
-            echo "::error::The secrets SIGNIER_SCHLUESSEL and SIGNIER_PASSWORT are missing."
-            echo "::error::To be created under Settings -> Secrets and variables -> Actions."
-            echo "::error::More in DEVELOPMENT.md, section \"Signing\"."
-            exit 1
-          fi
-          printf '%s' "$SCHLUESSEL" | base64 -d > "$RUNNER_TEMP/spieleabend.keystore"
-          test -s "$RUNNER_TEMP/spieleabend.keystore"
-          echo "Key ready ($(wc -c < "$RUNNER_TEMP/spieleabend.keystore") bytes)."
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -200,7 +202,7 @@ jobs:
           cp app-icon-background.png assets/icon-background.png
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Android project
         run: npx cap add android
@@ -391,10 +393,13 @@ jobs:
           sed -n '1,8p' "$MANIFEST"
 
       - name: Write the version into the Android project
+        env:
+          CODE: ${{ steps.fassung.outputs.code }}
+          NUMMER: ${{ steps.fassung.outputs.nummer }}
         run: |
           set -eu
-          sed -i 's/versionCode .*/versionCode ${{ steps.fassung.outputs.code }}/' android/app/build.gradle
-          sed -i 's/versionName .*/versionName "${{ steps.fassung.outputs.nummer }}"/' android/app/build.gradle
+          sed -i "s/versionCode .*/versionCode $CODE/" android/app/build.gradle
+          sed -i "s/versionName .*/versionName \"$NUMMER\"/" android/app/build.gradle
           grep -n 'version\(Code\|Name\)' android/app/build.gradle
 
       - name: Add the signature to the Android project
@@ -429,7 +434,52 @@ jobs:
       - name: Copy web files into the project
         run: npx cap sync android
 
+      - name: Provide signing key (trial run)
+        # A pull request is only a trial: it is signed with a throwaway key
+        # made right here and never sees the real secrets.
+        if: github.event_name == 'pull_request'
+        run: |
+          set -eu
+          keytool -genkeypair -keystore "$RUNNER_TEMP/spieleabend.keystore" \
+            -alias spieleabend -keyalg RSA -keysize 2048 -validity 2 \
+            -storepass wegwerf-pruefschluessel -keypass wegwerf-pruefschluessel \
+            -dname "CN=Trial build"
+          echo "Throwaway key ready."
+
+      - name: Provide signing key
+        # Directly before the build, after all npm and capacitor steps. Without
+        # a fixed key Gradle signs every build with a new random key. For
+        # Android the signature is the app's identity: two packages with
+        # different identities are two different apps, and an update fails
+        # with "App not installed".
+        if: github.event_name != 'pull_request'
+        env:
+          SCHLUESSEL: ${{ secrets.SIGNIER_SCHLUESSEL }}
+          PASSWORT: ${{ secrets.SIGNIER_PASSWORT }}
+        run: |
+          set -eu
+          if [ -z "${SCHLUESSEL:-}" ] || [ -z "${PASSWORT:-}" ]; then
+            echo "::error::The secrets SIGNIER_SCHLUESSEL and SIGNIER_PASSWORT are missing."
+            echo "::error::To be created under Settings -> Environments -> release."
+            echo "::error::More in DEVELOPMENT.md, section \"Signing\"."
+            exit 1
+          fi
+          printf '%s' "$SCHLUESSEL" | base64 -d > "$RUNNER_TEMP/spieleabend.keystore"
+          test -s "$RUNNER_TEMP/spieleabend.keystore"
+          echo "Key ready ($(wc -c < "$RUNNER_TEMP/spieleabend.keystore") bytes)."
+
+      - name: Build APK (trial run)
+        if: github.event_name == 'pull_request'
+        env:
+          SPIELEABEND_KEYSTORE: ${{ runner.temp }}/spieleabend.keystore
+          SPIELEABEND_PASSWORT: wegwerf-pruefschluessel
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
       - name: Build APK
+        if: github.event_name != 'pull_request'
         env:
           SPIELEABEND_KEYSTORE: ${{ runner.temp }}/spieleabend.keystore
           SPIELEABEND_PASSWORT: ${{ secrets.SIGNIER_PASSWORT }}
@@ -438,14 +488,21 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
+      - name: Delete the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/spieleabend.keystore"
+
       - name: Name the APK and check the signature
         id: apk
+        env:
+          NUMMER: ${{ steps.fassung.outputs.nummer }}
+          TRIAL: ${{ github.event_name == 'pull_request' }}
         # pipefail is essential here: without it only the exit status of the
         # last link of a pipeline counts. A failed keytool thus went unnoticed,
         # because the following sed was content with empty input.
         run: |
           set -euo pipefail
-          NAME="game-night-${{ steps.fassung.outputs.nummer }}.apk"
+          NAME="game-night-$NUMMER.apk"
           cp android/app/build/outputs/apk/release/app-release.apk "$NAME"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           ls -la "$NAME"
@@ -462,7 +519,14 @@ jobs:
           ABDRUCK="$(printf '%s' "$ROH" | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')"
           echo "Signature fingerprint: $ABDRUCK"
 
-          if [ "$ABDRUCK" != "$ERWARTETE_SIGNATUR" ]; then
+          if [ "$TRIAL" = "true" ]; then
+            # A trial run must never carry the real key.
+            if [ "$ABDRUCK" = "$ERWARTETE_SIGNATUR" ]; then
+              echo "::error::A trial build carries the real signing key."
+              exit 1
+            fi
+            echo "Trial build, signed with a throwaway key (as intended)."
+          elif [ "$ABDRUCK" != "$ERWARTETE_SIGNATUR" ]; then
             echo "::error::Signed with a different key than expected."
             echo "::error::expected: $ERWARTETE_SIGNATUR"
             echo "::error::received: $ABDRUCK"
@@ -486,19 +550,23 @@ jobs:
 
       - name: Get the release text from the changelog
         if: steps.fassung.outputs.raus == 'ja'
+        env:
+          NUMMER: ${{ steps.fassung.outputs.nummer }}
+          APK: ${{ steps.apk.outputs.name }}
+          ABDRUCK: ${{ steps.apk.outputs.abdruck }}
         run: |
           set -eu
           {
-            echo "**Install:** Open the file \`${{ steps.apk.outputs.name }}\` on the"
+            echo "**Install:** Open the file \`$APK\` on the"
             echo "phone. The first time, Android asks whether apps from this source"
             echo "are allowed - this has to be confirmed once. An existing version"
             echo "is replaced, the collection stays."
             echo
-            echo "Signature: \`${{ steps.apk.outputs.abdruck }}\`"
+            echo "Signature: \`$ABDRUCK\`"
             echo
             echo "---"
             echo
-            awk -v v="${{ steps.fassung.outputs.nummer }}" '
+            awk -v v="$NUMMER" '
               $0 ~ "^## \\[" v "\\]" { an = 1; next }
               an && /^## \[/          { exit }
               an && /^\[[^]]+\]: /    { exit }
@@ -507,16 +575,39 @@ jobs:
           } > begleittext.md
           cat begleittext.md
 
+      - name: Hand the release files to the publishing job
+        # The job that built the APK has no write access; the next one does.
+        if: steps.fassung.outputs.raus == 'ja'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-dateien
+          path: |
+            ${{ steps.apk.outputs.name }}
+            begleittext.md
+          retention-days: 1
+
+  # Has write access, runs no npm or Gradle code and sees no signing key.
+  veroeffentlichen:
+    needs: bauen
+    if: needs.bauen.outputs.raus == 'ja'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Fetch the release files
+        uses: actions/download-artifact@v7
+        with:
+          name: release-dateien
+
       - name: Publish
         # If the tag does not exist yet, GitHub creates it at this state when
         # the release is created.
-        if: steps.fassung.outputs.raus == 'ja'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ steps.fassung.outputs.nummer }}
+          tag_name: v${{ needs.bauen.outputs.nummer }}
           target_commitish: ${{ github.sha }}
-          name: Game Night v${{ steps.fassung.outputs.nummer }}
+          name: Game Night v${{ needs.bauen.outputs.nummer }}
           body_path: begleittext.md
-          files: ${{ steps.apk.outputs.name }}
+          files: ${{ needs.bauen.outputs.apk }}
           fail_on_unmatched_files: true
           make_latest: true

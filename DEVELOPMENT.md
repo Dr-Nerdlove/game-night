@@ -82,7 +82,9 @@ The workflow runs in four cases:
 - **A pull request** that touches `apk.yml`, `package.json`,
   `capacitor.config.json` or the app icons: a trial build, nothing is published.
   That is the check for the Java parts, which cannot be compiled anywhere else.
-  Pull requests from forks are skipped (no secrets, so no signing).
+  Pull requests from forks are skipped. Pull requests from this repository are
+  signed with a throwaway key made in the run and never see the real secrets
+  (see "Signing").
 - On a version tag (`v*`) or via "Run workflow" with the `veroeffentlichen`
   checkbox: a release by hand.
 - "Run workflow" without the tick: a trial run.
@@ -99,6 +101,11 @@ customised is written as a heredoc in the workflow:
 - `values-de/strings.xml` (German app name), `locales_config.xml` including the
   reference in the manifest,
 - the signing and the version number.
+
+Dependencies come from the committed `package-lock.json` (`npm ci`), so a new
+build never pulls in newer packages unnoticed. Update it on purpose with
+`npm install` and commit the result; after a version bump the `version` line at
+the top of the lock file may lag behind, which `npm ci` does not mind.
 
 **Java cannot be compiled outside the build.** The pull request's trial build
 shows whether a change to these building blocks holds; merge only when it is
@@ -257,9 +264,56 @@ Since then: `assembleRelease` with a fixed key from two secrets.
 | `SIGNIER_SCHLUESSEL` | the key file, Base64-encoded |
 | `SIGNIER_PASSWORT` | the password, the same for store and key |
 
-To be created under *Settings → Secrets and variables → Actions*. If they are
-missing, the build stops right in the second step with an understandable message
--- better that than a package that cannot be updated later.
+They belong in the GitHub Environment **`release`** (see the steps below). If
+they are missing, the build stops in the step "Provide signing key" with an
+understandable message -- better that than a package that cannot be updated
+later.
+
+**How the key is protected in the workflow** (November 2026, the key itself did
+not change):
+
+- The key file is decoded only in the step directly before the Gradle build,
+  after `npm ci` and all Capacitor steps, and deleted again right after it
+  (`if: always()`). The password is only in the environment of the steps that
+  need it.
+- Pull request trial builds sign with a throwaway key made by `keytool` in the
+  run, and the step "Name the APK and check the signature" fails if such a
+  build carries the real fingerprint. They have no environment, so they cannot
+  read the secrets. A pull request runs its own edited copy of the workflow, so
+  the environment is the real protection, not the `if:` lines.
+- The job `bauen` (npm, Gradle) only has read access. The release is created by
+  the separate job `veroeffentlichen`, which has write access but runs no
+  npm or Gradle code and sees no key.
+- The version from `package.json` must be `x.y.z` with single digits, otherwise
+  the build stops; later steps get it through `env`, not pasted into scripts.
+
+**Steps for the owner, once** (until they are done, the workflow keeps working:
+a job in an environment can still read the repository secrets of the same
+name, and environment secrets only take precedence over them -- so nothing
+breaks, but pull requests can still reach the secrets):
+
+1. Auf GitHub das Repository öffnen: **Settings → Environments → New environment**.
+2. Als Name `release` eingeben und auf **Configure environment** klicken.
+3. Bei **Deployment branches and tags** auf **Selected branches and tags**
+   umstellen und zwei Regeln hinzufügen: **Add deployment branch or tag rule**
+   → Ref type **Branch**, Name pattern `main`; und noch einmal → Ref type
+   **Tag**, Name pattern `v*`.
+4. Weiter unten bei **Environment secrets** auf **Add environment secret**
+   klicken und `SIGNIER_SCHLUESSEL` mit genau demselben Inhalt wie bisher
+   anlegen; dann `SIGNIER_PASSWORT` ebenso. (GitHub zeigt die alten Werte nicht
+   an; sie müssen aus deiner sicheren Kopie des Schlüssels kommen. Den
+   Schlüssel selbst bitte nicht neu erzeugen.)
+5. **Settings → Secrets and variables → Actions → Repository secrets**: die
+   beiden alten Einträge `SIGNIER_SCHLUESSEL` und `SIGNIER_PASSWORT` mit dem
+   Papierkorb-Symbol löschen. Erst jetzt ist der Schutz wirksam.
+6. Prüfen: **Actions → Android-App bauen → Run workflow** (ohne Haken bei
+   `veroeffentlichen`). Der Lauf muss grün sein und im Protokoll bei
+   "Name the APK and check the signature" den bekannten Abdruck zeigen.
+   Bei einem Pull Request muss dort stehen, dass mit einem Wegwerf-Schlüssel
+   signiert wurde.
+
+Notiz: Ein manueller Lauf von einem anderen Branch als `main` wird durch die
+Regel in Schritt 3 abgelehnt. Das ist gewollt.
 
 Inside, the key is called `spieleabend` (alias, fixed in the workflow). Every
 build reads the fingerprint of the finished APK and compares it with

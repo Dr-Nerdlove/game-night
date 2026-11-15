@@ -75,7 +75,9 @@ The inner padding of `.wrap` is in **two** places (the normal rule and `@media (
 
 The APK is signed with a fixed key from the secrets `SIGNIER_SCHLUESSEL` and `SIGNIER_PASSWORT`. If the key
 changes, the app can no longer be updated over the previous version, and every user loses their collection when
-they have to uninstall. Every build writes the fingerprint to the log - it must stay the same. Background in
+they have to uninstall. Every build writes the fingerprint to the log - it must stay the same. The secrets belong in the GitHub Environment
+`release`; pull requests build with a throwaway key and must never get at the real one. Keep the key file decoded only in
+the step right before Gradle and deleted after it, and keep `npm ci` with the committed `package-lock.json`. Background in
 `DEVELOPMENT.md`.
 
 ## Releasing a new version
