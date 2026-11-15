@@ -3,7 +3,6 @@ node_modules/
 www/
 android/
 assets/
-package-lock.json
 *.apk
 
 # Betriebssystem-Beiwerk
