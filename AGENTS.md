@@ -386,6 +386,8 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   status checks required; Nov 2026). AGPL-3.0-or-later (`LICENSE`; the fonts keep the OFL 1.1). Version scheme `x.y.z` without
   two-digit parts (see "Releasing a new version"), changes in `CHANGELOG.md`. Automatic checks in `checks.yml` on every
   pull request; `pages.yml` repeats the syntax check and stops the web version from going out when it fails.
-  The APK is built on demand by `apk.yml`.
+  The APK is built on demand by `apk.yml`. GitHub security settings (set by the owner, Nov 2026): Dependabot alerts on (with
+  the dependency graph), secret scanning with push protection on; automatic dependency submission and AI scan off (Actions
+  runs and AI credits for little gain). A Dependabot alert is checked in a session before anything is changed.
 - **Limits of the environment:** a cloud session cannot push tags (HTTP 403; use the workflow instead) and cannot
   compile Java. Wikidata throttles cloud machines.
