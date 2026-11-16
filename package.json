@@ -6,7 +6,7 @@
   "description": "Welches Brettspiel passt zur heutigen Runde? Android-App.",
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
-    "@capacitor/assets": "^3.0.5"
+    "@capacitor/assets": "^4.0.0"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
