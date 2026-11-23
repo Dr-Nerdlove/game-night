@@ -90,7 +90,7 @@ The workflow runs in four cases:
 - "Run workflow" without the tick: a trial run.
 
 A release stays unchanged afterwards; a trial run only attaches its APK as a
-build artifact (it disappears after seven days).
+build artifact (it is kept for one day only; download it the same day).
 
 **What the workflow adds to the freshly generated Android project** -- `npx cap
 add android` creates `android/` anew on every build, which is why everything

@@ -112,7 +112,7 @@ after the merge fails and costs a version number.
 ## Check, don't hope
 
 **Automatic checks** (`.github/workflows/checks.yml`, "Pruefen") run on every pull request and every push to
-`main`: the syntax check, `tests/check-version.sh` (version the same in the three places, no two-digit parts) and
+`main` (except pushes that only change documentation): the syntax check, `tests/check-version.sh` (version the same in the three places, no two-digit parts) and
 the browser tests in `tests/smoke.mjs` (headless Chrome at phone size: samples, filters, "Played today", "Not in
 the mood", backup round trip, English, touch targets, dark mode). Merge only when they are green. **A new
 behaviour gets a test there, with a sabotage check** (break it on purpose, see the test fail, restore). Run them
@@ -389,5 +389,12 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   The APK is built on demand by `apk.yml`. GitHub security settings (set by the owner, Nov 2026): Dependabot alerts on (with
   the dependency graph), secret scanning with push protection on; automatic dependency submission and AI scan off (Actions
   runs and AI credits for little gain). A Dependabot alert is checked in a session before anything is changed.
+- **Workflows vs. the GitHub Actions rules (Nov 2026):** all jobs have `timeout-minutes`; checks and Pages cancel
+  older runs, `apk.yml` only cancels pull request trial builds; npm and Gradle downloads are cached (Gradle via
+  `setup-java`, keyed on `package-lock.json`); the trial APK artifact is kept one day. Deliberately different
+  from the rules, by the project's own decision: the APK is also released automatically after a merge that
+  raises the version, pull requests touching native parts get a trial build, and the manual release uses the
+  `veroeffentlichen` checkbox (the version comes from the three files) instead of a version input. Pull request
+  checks have no `paths-ignore`, because `main` requires them.
 - **Limits of the environment:** a cloud session cannot push tags (HTTP 403; use the workflow instead) and cannot
   compile Java. Wikidata throttles cloud machines.
