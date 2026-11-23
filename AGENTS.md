@@ -378,6 +378,13 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   `CHANGELOG.md`, no two-digit parts, never lower. A push to `main` publishes the web version; the APK comes from
   the `apk.yml` workflow, automatically after a merge that raises the version (or by hand with
   `veroeffentlichen`). Never change the signing key.
+- **Workflows vs. the GitHub Actions rules (Nov 2026):** all jobs have `timeout-minutes`; checks and Pages cancel
+  older runs, `apk.yml` only cancels pull request trial builds; npm and Gradle downloads are cached (Gradle via
+  `setup-java`, keyed on `package-lock.json`); the trial APK artifact is kept one day. Deliberately different
+  from the rules, by the project's own decision: the APK is also released automatically after a merge that
+  raises the version, pull requests touching native parts get a trial build, and the manual release uses the
+  `veroeffentlichen` checkbox (the version comes from the three files) instead of a version input. Pull request
+  checks have no `paths-ignore`, because `main` requires them.
 - **Traps:** a new game field must be carried in four places; the embedded fonts are not clutter; `.wrap`
   padding in two places; touch targets of at least 44 px; "Played today" must not re-sort; the test traps under
   "Check, don't hope" (`getComputedStyle` after `render()`, `pkill -f`, empty shelf, Capacitor bridge,
@@ -389,12 +396,5 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   The APK is built on demand by `apk.yml`. GitHub security settings (set by the owner, Nov 2026): Dependabot alerts on (with
   the dependency graph), secret scanning with push protection on; automatic dependency submission and AI scan off (Actions
   runs and AI credits for little gain). A Dependabot alert is checked in a session before anything is changed.
-- **Workflows vs. the GitHub Actions rules (Nov 2026):** all jobs have `timeout-minutes`; checks and Pages cancel
-  older runs, `apk.yml` only cancels pull request trial builds; npm and Gradle downloads are cached (Gradle via
-  `setup-java`, keyed on `package-lock.json`); the trial APK artifact is kept one day. Deliberately different
-  from the rules, by the project's own decision: the APK is also released automatically after a merge that
-  raises the version, pull requests touching native parts get a trial build, and the manual release uses the
-  `veroeffentlichen` checkbox (the version comes from the three files) instead of a version input. Pull request
-  checks have no `paths-ignore`, because `main` requires them.
 - **Limits of the environment:** a cloud session cannot push tags (HTTP 403; use the workflow instead) and cannot
   compile Java. Wikidata throttles cloud machines.
