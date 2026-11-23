@@ -436,5 +436,11 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   The APK is built on demand by `apk.yml`. GitHub security settings (set by the owner, Nov 2026): Dependabot alerts on (with
   the dependency graph), secret scanning with push protection on; automatic dependency submission and AI scan off (Actions
   runs and AI credits for little gain). A Dependabot alert is checked in a session before anything is changed.
+- **History check (Nov 2026):** the whole history (124 commits: `main`, all tags, all pull request refs; 384 file
+  versions) was checked for secrets and for personal or machine details, with a pattern scan (no gitleaks in the
+  cloud session): no keys, tokens, passwords, local paths, home-network addresses or real e-mail addresses; commit
+  authors use GitHub noreply addresses; no PNG carries text or EXIF metadata. Known and harmless: the public
+  signing fingerprint `ERWARTETE_SIGNATUR` and the throwaway password of the pull request trial key in `apk.yml`.
+  Repeat the check for commits after this point only.
 - **Limits of the environment:** a cloud session cannot push tags (HTTP 403; use the workflow instead) and cannot
   compile Java. Wikidata throttles cloud machines.
