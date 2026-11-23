@@ -50,10 +50,12 @@ permissions:
   contents: read
 
 # Never two builds of the same state at once (a merge can start a release
-# while a manual run is still going).
+# while a manual run is still going). A release is never broken off halfway:
+# a second run waits. Only trial builds of a pull request are replaced by a
+# newer push to it.
 concurrency:
   group: apk-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # The fingerprint of the signing key. Not a secret - it is in every
@@ -67,6 +69,7 @@ jobs:
   # tag exists already (package.json changed for another reason), stop here.
   entscheiden:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       bauen: ${{ steps.pruefung.outputs.bauen }}
     steps:
@@ -97,6 +100,8 @@ jobs:
       (github.event_name != 'pull_request' ||
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
+    # A build takes about 3 minutes; the limit leaves room for an empty cache.
+    timeout-minutes: 20
     # The real signing key lives in the GitHub Environment "release". Pull
     # request runs get no environment, so they cannot read it, even if the
     # pull request edits this very file. Everything else (push to main, tag,
@@ -174,12 +179,22 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '22'
+          # Keeps the npm downloads between runs; npm ci still installs
+          # exactly what package-lock.json names.
+          cache: npm
 
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
+          # Keeps Gradle's downloads (~/.gradle/caches) between runs. The
+          # Android project only exists after "cap add android", so the key
+          # is taken from package-lock.json: the Capacitor versions there
+          # decide which Gradle libraries are needed. Caches written by pull
+          # requests are never read by builds on main.
+          cache: gradle
+          cache-dependency-path: package-lock.json
 
       - name: Collect web files
         # Capacitor expects the page in a folder of its own. The server and
@@ -538,15 +553,15 @@ jobs:
       - name: Attach the APK as a build artifact
         # Only for trial runs. In a release the same file is attached to the
         # release anyway and stays there permanently - the attachment would be
-        # a second copy, which this project clears away after seven days
-        # (checked on the attachment of a trial run: created 21 Oct, expires
-        # 28 Oct). In a trial run it is the only way to get at the built file,
-        # so it stays there.
+        # a second copy. In a trial run it is the only way to get at the built
+        # file; it is kept for one day only, because kept artifacts fill the
+        # account's storage. Download it the same day if it is needed.
         if: steps.fassung.outputs.raus != 'ja'
         uses: actions/upload-artifact@v7
         with:
           name: game-night-apk
           path: ${{ steps.apk.outputs.name }}
+          retention-days: 1
 
       - name: Get the release text from the changelog
         if: steps.fassung.outputs.raus == 'ja'
@@ -591,6 +606,7 @@ jobs:
     needs: bauen
     if: needs.bauen.outputs.raus == 'ja'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:

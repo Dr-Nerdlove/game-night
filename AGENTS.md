@@ -112,7 +112,7 @@ after the merge fails and costs a version number.
 ## Check, don't hope
 
 **Automatic checks** (`.github/workflows/checks.yml`, "Pruefen") run on every pull request and every push to
-`main`: the syntax check, `tests/check-version.sh` (version the same in the three places, no two-digit parts) and
+`main` (except pushes that only change documentation): the syntax check, `tests/check-version.sh` (version the same in the three places, no two-digit parts) and
 the browser tests in `tests/smoke.mjs` (headless Chrome at phone size: samples, filters, "Played today", "Not in
 the mood", backup round trip, English, touch targets, dark mode). Merge only when they are green. **A new
 behaviour gets a test there, with a sabotage check** (break it on purpose, see the test fail, restore). Run them
@@ -425,6 +425,13 @@ Most of this project's knowledge is in the sections above and in `DEVELOPMENT.md
   `CHANGELOG.md`, no two-digit parts, never lower. A push to `main` publishes the web version; the APK comes from
   the `apk.yml` workflow, automatically after a merge that raises the version (or by hand with
   `veroeffentlichen`). Never change the signing key.
+- **Workflows vs. the GitHub Actions rules (Nov 2026):** all jobs have `timeout-minutes`; checks and Pages cancel
+  older runs, `apk.yml` only cancels pull request trial builds; npm and Gradle downloads are cached (Gradle via
+  `setup-java`, keyed on `package-lock.json`); the trial APK artifact is kept one day. Deliberately different
+  from the rules, by the project's own decision: the APK is also released automatically after a merge that
+  raises the version, pull requests touching native parts get a trial build, and the manual release uses the
+  `veroeffentlichen` checkbox (the version comes from the three files) instead of a version input. Pull request
+  checks have no `paths-ignore`, because `main` requires them.
 - **Traps:** a new game field must be carried in four places; the embedded fonts are not clutter; `.wrap`
   padding in two places; touch targets of at least 44 px; "Played today" must not re-sort; the test traps under
   "Check, don't hope" (`getComputedStyle` after `render()`, `pkill -f`, empty shelf, Capacitor bridge,
