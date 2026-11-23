@@ -180,7 +180,7 @@ individual cases live.
 - Don't add a line that appears on every card - what everyone shares says nothing.
 - Don't hard-exclude anything the user might still want: lower it in the ranking and name the reason instead.
 
-<!-- owner-rules v16: general (AGENTS.md) - begin -->
+<!-- owner-rules v19: general (AGENTS.md) - begin -->
 
 ## General rules
 
@@ -245,6 +245,10 @@ individual cases live.
   once, without repeating the value. The secret counts as burnt: it must be **changed at the provider**, which
   makes the leaked copy worthless. Deleting it from the history alone is not enough (copies, caches, forks and
   logs keep it), and rewriting history happens only when the owner explicitly agrees.
+- **Before a repository is made public**, check its whole history (all commits and branches) for secrets and
+  for what tells others about the people or their machines (see above). Report what you find without showing
+  the values, and change nothing in the history without the owner's consent. Anything found counts as burnt
+  once the repository is public. If it is public already, do the check at once.
 - **Personal data** (of the people or of the product's users) is not sent anywhere new, logged or published
   without asking.
 - **What users have stays usable after an update**: their settings, saved data, accounts. When a change
@@ -291,10 +295,11 @@ missing, with a recommendation, and let the people choose.
   it (build, test, release), and its licence. Keep it up to date with every change that affects it.
 - **Pull request descriptions**: what changes, why, how it was tested (and what was not), and anything the
   reviewer should know.
-- **Automatic checks (CI)**: every push and pull request builds the project and runs its tests
-  automatically; merge only when they pass. Where a project has none, offer to set it up. Where they do not
-  look for secrets yet, offer a secret scan of every push (e.g. gitleaks); add it only when the owner chooses
-  it.
+- **Automatic checks (CI)**: every pull request runs the project's tests and checks that the code compiles,
+  also where there are no tests; merge only when this passes. Keep these checks quick and keep nothing they
+  build; files to publish are built for releases (see "GitHub Actions"). Where a project has none, offer to
+  set it up. Where they do not look for secrets yet, offer a secret scan of every push (e.g. gitleaks); add it
+  only when the owner chooses it.
 - **Releases**: version numbers `vMAJOR.MINOR.PATCH` (e.g. `v1.4.2`: major for breaking changes, minor for
   new features, patch for fixes). Files that are published are built by CI, never by hand. Each release says
   in plain words what is new and how to install or update.
@@ -337,6 +342,48 @@ missing, with a recommendation, and let the people choose.
   Für weitere Projekte: das Ruleset dort über **Export ruleset** speichern und im nächsten Projekt über
   **Import a ruleset** übernehmen.
 
+### GitHub Actions
+
+The owner's account is on GitHub's free plan: 0.5 GB of storage and a limited number of minutes. Where the
+repository belongs to someone else, these points still apply unless "Project knowledge" says otherwise.
+
+- **Storage counts in every repository.** Artifacts that are kept (test builds, APKs from pull requests) are
+  what fills it; keep as little as possible, as short as possible.
+- **Minutes count only in private repositories.** In public ones, GitHub-hosted runners are free. Check whether
+  the repository is public or private before weighing a change: in a public one, saving minutes is tidiness,
+  not money; in a private one, it matters.
+- Apply the points below in both cases; they keep the project tidy and make it ready to become private.
+
+- **Builds** (an APK and the like) run only for release tags (`v*`) and when started by hand
+  (`workflow_dispatch`), not on every push.
+- **Releases are started by hand**, because a cloud session cannot push tags: the release workflow has
+  `workflow_dispatch` with the version as input, creates the tag and the GitHub Release itself
+  (`permissions: contents: write`) and builds in the same run, since a tag created by a workflow does not
+  start other workflows. Tell the person how to start it (Actions → the release workflow → Run workflow →
+  enter the version) and describe it under "Release" in "Project knowledge". If the tag exists already, the
+  workflow stops at the start with a clear message.
+- Where a build on push is needed (e.g. publishing to GitHub Pages after a merge): only on `main`, and with
+  `paths-ignore:` so that changes to documentation, the README and the AI instructions (`AGENTS.md`,
+  `CLAUDE.md`, `.claude/**`) do not start it.
+- Checks on pull requests skip changes that only touch those files (`paths-ignore:`). Not where `main`
+  requires the check (see "Protecting `main`"): a required check that never ran blocks the merge.
+- Every workflow sets `concurrency` with `cancel-in-progress: true`, except the release workflow: there
+  `cancel-in-progress: false`, so a second run waits instead of breaking off a release halfway.
+- Every job has `timeout-minutes`.
+- Dependencies are cached (e.g. `gradle/actions/setup-gradle`, `actions/setup-node` with `cache:`).
+- Finished APKs are attached to a GitHub Release instead of kept as an artifact.
+- Where an artifact is needed: only the final file, with `retention-days: 1`.
+- Build only the one variant that is needed (e.g. release, not debug as well).
+- **A release APK must be signed**, always with the same key, the keystore and its passwords kept as
+  repository secrets. An app signed with a different key cannot be installed as an update: the old one has to
+  be removed first, and its data with it. Before switching from a debug build, check whether the earlier APKs
+  had a fixed key at all (on GitHub's runners the debug key is made anew on every run unless the project
+  keeps one), tell the owner which case it is and whether users will have to reinstall, and ask. When the
+  keystore is set up, ask the owner to keep a copy of it and its passwords outside GitHub (e.g. in a password
+  manager): a secret cannot be read back, and without the key no update can ever be built again.
+- When the rules are installed, check the project's workflows against these points and point out what
+  differs, with a proposed change.
+
 ### Showing changes
 
 - Show visual changes rather than describing them: **screenshots** where the result runs on a computer.
@@ -356,7 +403,7 @@ missing, with a recommendation, and let the people choose.
   conversation: decisions and why, traps that cost time, how to build, test and release, and the limits of
   the environment (what a cloud session cannot do there).
 
-<!-- owner-rules v16: general (AGENTS.md) - end -->
+<!-- owner-rules v19: general (AGENTS.md) - end -->
 
 ## Project knowledge
 
