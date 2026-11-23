@@ -7,17 +7,37 @@
 name: Pruefen
 
 on:
+  # No paths filter on pull requests: main requires these checks, and a
+  # required check that never ran blocks the merge.
   pull_request:
   push:
     branches: [main]
+    # After a merge, pure documentation changes need no second run.
+    # CHANGELOG.md is not in the list: the version check reads it.
+    paths-ignore:
+      - README.md
+      - DEVELOPMENT.md
+      - FONTS.md
+      - AGENTS.md
+      - CLAUDE.md
+      - ".claude/**"
+      - LICENSE
+      - logo.png
+      - "screenshots/**"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A newer push to the same branch or pull request replaces a running check.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   syntax:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -31,6 +51,7 @@ jobs:
 
   version:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - name: Check that the version is the same everywhere
@@ -38,11 +59,16 @@ jobs:
 
   browser:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+          # Keeps the npm downloads between runs; npm ci still installs
+          # exactly what tests/package-lock.json names.
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
       - name: Run the browser tests
         working-directory: tests
         env:
